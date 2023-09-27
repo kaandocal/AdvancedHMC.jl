@@ -1,5 +1,7 @@
 using ReTest, Random, AdvancedHMC, ForwardDiff, AbstractMCMC
 using Statistics: mean
+using MCMCChains
+
 include("common.jl")
 
 @testset "AbstractMCMC w/ gdemo" begin
@@ -54,4 +56,24 @@ include("common.jl")
     @test mapreduce(*, samples1, samples2) do s1, s2
         s1.z.θ == s2.z.θ
     end # Equivalent to using all, check that all samples are equal
+
+    # Test MCMCChains
+    rng3 = MersenneTwister(42)
+    samples3 = AbstractMCMC.sample(
+        rng3, model, κ, metric, adaptor, 10;
+        nadapts = 0,
+        progress=false,
+        verbose=false,
+        chain_type=Chains,
+        param_names=[:s_t, :m_t]
+    );
+    
+    @test mapreduce(*, samples1, get(samples3, :s_t)) do s1, s3
+        s1.z.θ[1] == s3
+    end # Equivalent to using all, check that all samples are equal
+
+    @test mapreduce(*, samples1, get(samples3, :m_t)) do s1, m3
+        s1.z.θ[2] == m3
+    end # Equivalent to using all, check that all samples are equal
+
 end
